@@ -64,3 +64,17 @@ test('Yes seats the buddy with a session summary, and they work along with a too
   expect(during).toEqual(['Reading notes.md...', 'Reading notes.md...'])
   expect(await desktop.find({ type: 'Text', text: /Thinking/ })).toBeDefined()
 })
+
+test('where no band is drawn (VS Code), the pane asks and Yes seats the buddy', async ($, on) => {
+  on('ui.open', () => ({ value: { isPlaced: true as const } }))
+  on('model.fork', () => ({ value: { isAnswered: false as const, reason: 'nothing-to-fork' as const } }))
+
+  const pane = await $.ui.mount({ ...PANE, surface: 'vscode' })
+  expect(await pane.find({ type: 'Text', text: /virtual buddy/ })).toBeDefined()
+  expect(await pane.find({ type: 'Svg' })).toBeUndefined()
+
+  await pane.press({ key: 'yes' })
+  expect(await pane.find({ key: 'yes' })).toBeUndefined()
+  expect((await pane.find({ type: 'Svg' }))?.props.alt).toMatch(/Ready when you are/)
+  expect(await pane.find({ type: 'Text', text: 'Session summary' })).toBeDefined()
+})

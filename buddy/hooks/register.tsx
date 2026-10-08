@@ -96,6 +96,24 @@ function stopTicker(): void {
   ticker = undefined
 }
 
+// The band above the prompt is drawn on the terminal and the desktop only: on
+// any other surface (VS Code, mobile) the pane itself asks the question.
+function hasNoBand(surface: string): boolean {
+  return surface !== 'terminal' && surface !== 'desktop'
+}
+
+async function seatBuddy($: EngineInterface, isWorking: boolean): Promise<void> {
+  await update($, mode, () => 'on')
+
+  if (isWorking) {
+    await update($, activity, () => THINKING)
+    startTicker($)
+  }
+
+  await $.ui.open({ id: PANE, title: TITLE })
+  void refreshSummary($, '')
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -103,7 +121,18 @@ export const register: Register = on => {
       description: 'Call your virtual buddy to the desk, or send them home',
     })
 
-    if ((await read($, mode)) === 'on') {
+    const current = await read($, mode)
+    const isAskingInPane = current === 'ask' && (await $.session.surfaces()).some(hasNoBand)
+
+    if (current === 'on' || isAskingInPane) {
+      void $.ui.open({ id: PANE, title: TITLE })
+    }
+
+    return next(e)
+  })
+
+  on('session.attach', async ($, e, next) => {
+    if (hasNoBand(e.surface) && (await read($, mode)) === 'ask') {
       void $.ui.open({ id: PANE, title: TITLE })
     }
 
@@ -118,9 +147,7 @@ export const register: Register = on => {
       return { text: 'Buddy went home. /buddy brings them back.' }
     }
 
-    await update($, mode, () => 'on')
-    await $.ui.open({ id: PANE, title: TITLE })
-    void refreshSummary($, '')
+    await seatBuddy($, false)
 
     return { text: 'Buddy is at their desk.' }
   })
@@ -187,17 +214,7 @@ export const register: Register = on => {
           key="yes"
           label="Yes"
           variant="primary"
-          onPress={async () => {
-            await update($, mode, () => 'on')
-
-            if (isWorking) {
-              await update($, activity, () => THINKING)
-              startTicker($)
-            }
-
-            await $.ui.open({ id: PANE, title: TITLE })
-            void refreshSummary($, '')
-          }}
+          onPress={() => seatBuddy($, isWorking)}
         />
         <Button key="no" label="No" onPress={() => update($, mode, () => 'off')} />
       </Box>
@@ -205,6 +222,27 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    if ((await read($, mode)) === 'ask') {
+      const { Box, Button, Text } = $.ui.resolve(e)
+
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text>Want a virtual buddy this session?</Text>
+          <Box gap={1}>
+            <Button key="yes" label="Yes" variant="primary" onPress={() => seatBuddy($, false)} />
+            <Button
+              key="no"
+              label="No"
+              onPress={async () => {
+                await update($, mode, () => 'off')
+                await $.ui.close({ id: PANE })
+              }}
+            />
+          </Box>
+        </Box>
+      )
+    }
+
     const doing = await read($, activity)
     const { points, isUpdating } = await read($, summary)
     const { Box, Text } = $.ui.resolve(e)
