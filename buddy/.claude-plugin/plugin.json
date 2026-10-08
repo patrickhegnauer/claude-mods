@@ -1,6 +1,6 @@
 {
   "name": "buddy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A panda colleague in a side pane who works along with each task and keeps a short management summary of the session.",
   "author": { "name": "Patrick Hegnauer" },
   "types": "./types/index.d.ts"

@@ -65,6 +65,21 @@ test('Yes seats the buddy with a session summary, and they work along with a too
   expect(await desktop.find({ type: 'Text', text: /Thinking/ })).toBeDefined()
 })
 
+test('where nothing draws a pane, /buddy answers in the conversation with the summary', async ($, on) => {
+  on('session.surfaces', () => ({ value: [] }))
+  on('model.fork', () => ({
+    value: {
+      isAnswered: true as const,
+      text: '- Built the buddy mod.\n- Next: pick a name.',
+      usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+    },
+  }))
+
+  const answer = await $.command.run({ command: 'buddy', args: '' } as never)
+  expect(answer.text).toMatch(/Session summary\*\*\n- Built the buddy mod\.\n- Next: pick a name\./)
+  expect(answer.text).toMatch(/nom/)
+})
+
 test('where no band is drawn (VS Code), the pane asks and Yes seats the buddy', async ($, on) => {
   on('ui.open', () => ({ value: { isPlaced: true as const } }))
   on('model.fork', () => ({ value: { isAnswered: false as const, reason: 'nothing-to-fork' as const } }))

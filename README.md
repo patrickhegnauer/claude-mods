@@ -12,7 +12,7 @@ A virtual colleague for your session: a panda at a desk, in a pane beside the co
 - **Session summary.** Under the panda, 3 to 5 bullet points sum up the session so far: goal, what was done, decisions, open problems, next steps. It refreshes after every reply.
 - **`/buddy`** calls the buddy to the desk or sends them home.
 
-The desktop app draws an animated picture; a terminal draws a small ASCII panda.
+The desktop app draws an animated picture; a terminal draws a small ASCII panda. The VS Code panel cannot draw a mod's window yet: there `/buddy` answers in the conversation with the panda and a fresh session summary.
 
 ### Install
 

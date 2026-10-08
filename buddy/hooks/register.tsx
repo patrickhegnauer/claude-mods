@@ -69,6 +69,8 @@ function startTicker($: EngineInterface): void {
 }
 
 let summaryRun = 0
+// Set by any drawing this session asked for: proof that some surface draws plugins.
+let hasDrawn = false
 
 // One tool-less question over the session's own transcript; the newest run wins.
 async function refreshSummary($: EngineInterface, latest: string): Promise<void> {
@@ -140,6 +142,30 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'buddy' }, async $ => {
+    // Nothing draws a plugin's panes here (the VS Code panel, today): the
+    // buddy answers in the conversation instead, summary included.
+    if (!hasDrawn && (await $.session.surfaces()).length === 0) {
+      await update($, mode, () => 'off')
+      await refreshSummary($, '')
+      const { points } = await read($, summary)
+      const brief =
+        points.length > 0
+          ? points.map(point => `- ${point}`)
+          : ['No summary yet: there is nothing to sum up before the first reply.']
+
+      return {
+        text: [
+          '```',
+          ...ascii('idle', 16),
+          '```',
+          '**Session summary**',
+          ...brief,
+          '',
+          "_This app can't show the buddy's window; type /buddy again for a fresh summary._",
+        ].join('\n'),
+      }
+    }
+
     if ((await read($, mode)) === 'on') {
       await update($, mode, () => 'off')
       await $.ui.close({ id: PANE })
@@ -200,6 +226,8 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    hasDrawn = true
+
     if (e.props.hasSurvey || (await read($, mode)) !== 'ask') {
       return next(e)
     }
@@ -222,6 +250,8 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    hasDrawn = true
+
     if ((await read($, mode)) === 'ask') {
       const { Box, Button, Text } = $.ui.resolve(e)
 
