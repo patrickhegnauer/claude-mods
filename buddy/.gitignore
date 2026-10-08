@@ -1,0 +1,3 @@
+# Types the engine lays beside a mod it loads
+.claude-plugin/types/
+tsconfig.json

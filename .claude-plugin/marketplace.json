@@ -1,0 +1,11 @@
+{
+  "name": "hegnauer-mods",
+  "owner": { "name": "Patrick Hegnauer" },
+  "plugins": [
+    {
+      "name": "buddy",
+      "source": "./buddy",
+      "description": "A panda colleague in a side pane who works along with each task and keeps a short management summary of the session."
+    }
+  ]
+}
